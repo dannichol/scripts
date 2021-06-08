@@ -2,7 +2,8 @@
 
 function print_net() {
   net=$(nmcli connection show | grep -v "\-\-")
-  [[ -n $net ]] && status=$(echo $net | cut -d' ' -f7 | tr [a-z] [A-Z]) \
+  [[ -n $net ]] \
+    && status=$(echo $net | cut -d' ' -f7 | tr '[:lower:]' '[:upper:]') \
     || unset status
   echo -e "$status "
 }
