@@ -1,53 +1,85 @@
 #!/bin/bash
 
-ERRLOG=/home/dan/scripts/log/backup_error.log
-bailout() {
-    echo "$(date '+%d/%m/%Y %H:%M:%S') $1" | tee -a "$ERRLOG"
-    exit 7
+#ERRLOG=/home/dan/scripts/log/backup_error.log
+function bailout() {
+    echo "$(date '+%H:%M:%S',) EXITING, $*" #| tee -a "$ERRLOG"
+    usage
+    exit 1
 }
 
-usage() {
-echo "This script is designed to backup the system as follows:"
-echo " "
-echo "    --backup-root    backs up the root filesystem from / to /backup"
-echo "    --restore-root   restores the root filesystem from /backup to /"
-echo " "
-exit 10
+function usage() {
+echo "
+Options:
+  Only one of the following should be used.
+   -b 
+      Backup source to target
+   -r 
+      Restore source to target
+Flags:
+  Both are required.
+   -s
+      Source directory path
+   -t
+      Target directory path
+Usage:
+  ./backup -b -s /home/user -t /mnt/usb/backups/home
+"
 }
 
-[[ $USER != "root" ]] && bailout "Please run this as ROOT"
+function verifyOpts() {
+  [ -n "$ACTION" ] && bailout -b and -r cannot be used together
+}
 
-case "$1" in
-    --backup-root)
-        mount /dev/sdb3 /backup
-        [[ "$?" -ne 0 ]] && bailout "MOUNT operation failed"
-       	rsync -aAXv / --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/backup/*","/home"} /backup
-        [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
-        umount /backup
-        [[ "$?" -ne 0 ]] && bailout "UMOUNT operation failed"
-    ;;
+while getopts "brs:t:" opt; do
+	case ${opt} in
+	  b ) 
+      verifyOpts
+			[ -z "$ACTION" ] && ACTION=backup; export ACTION
+      echo "$ACTION"
+	  ;;
+	
+	  r ) 
+      verifyOpts
+			[ -z "$ACTION" ] && ACTION=restore; export ACTION
+      echo "$ACTION"
+	  ;;
+	
+	  s )
+	    echo "source=${OPTARG}"
+	  ;;
+	
+	  t )
+	    echo "target=${OPTARG}"
+	  ;;
+	
+	  \?)
+	    echo "Invalid option: ${OPTARG}" 1>&2
+	  ;;
+	
+	  : )
+	    echo "Invalid option: ${OPTARG} requires an argument" 1>&2
+	  ;;
+	
+	esac
+done
 
-    --restore-root)
-        mount /dev/sdb3 /backup
-        [[ "$?" -ne 0 ]] && bailout "MOUNT operation failed"
-        rsync -aAXv /backup --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/backup/*","/home"} /
-        [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
-        umount /backup
-        [[ "$?" -ne 0 ]] && bailout "UMOUNT operation failed"
-    ;;
-
-    --backup-home)
-        rsync -aAXv /home /run/media/dan/external_storage/home
-        [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
-    ;;
-
-    --restore-home)
-        rsync -aAXv /run/media/dan/external_storage/home /home 
-        [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
-    ;;
-
-    *) 
-        echo "$(date '+%d/%m/%Y %H:%M:%S') $1 is not a valid option" >> $ERRLOG
-        usage
-    ;;
-esac
+# OLD CODE THAT NEEDS TO BE CHANGED
+#
+# [[ $USER != "root" ]] && bailout "Please run this as ROOT"
+# 
+# case "$1" in
+#     --backup)
+#         rsync -aAXv /home /run/media/dan/external_storage/home
+#         [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
+#     ;;
+# 
+#     --restore)
+#         rsync -aAXv /run/media/dan/external_storage/home /home 
+#         [[ "$?" -ne 0 ]] && bailout "RSYNC operation failed with exit code $?. Please refer to rsync man page."
+#     ;;
+# 
+#     *) 
+#         echo "$(date '+%d/%m/%Y %H:%M:%S') $1 is not a valid option" >> $ERRLOG
+#         usage
+#     ;;
+# esac
