@@ -20,7 +20,7 @@ Flags:
    -s
       Source directory path
    -t
-      Target directory path
+      Target directory path. If not specified, defaults to source/source.tgz
 Usage:
   ./backup -b -s /home/user -t /mnt/usb/backups/home
 "
@@ -45,11 +45,14 @@ while getopts "brs:t:" opt; do
 	  ;;
 	
 	  s )
-	    echo "source=${OPTARG}"
+	    SOURCE="${OPTARG}"
+      TARGET="${OPTARG}${OPTARG}.tgz"
+      echo "$SOURCE" "$TARGET"
 	  ;;
 	
 	  t )
-	    echo "target=${OPTARG}"
+	    TARGET=${OPTARG}
+      echo "$TARGET"
 	  ;;
 	
 	  \?)
