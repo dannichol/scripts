@@ -15,7 +15,7 @@ function print_vol() {
 
 function print_batt() {
   mains=$(acpi -a | cut -d' ' -f3)
-  charge=$(acpi -b | cut -d' ' -f4 | tr '\n' ', ' | sed 's/,.$//g')
+  charge=$(acpi -b | awk '{ print $4 }' | tr -d ',' | tr '\n' ',' | sed 's/,$//')
   [[ $mains = "on-line" ]] && export plug="(charging)" || plug=''
   echo "Batt:$charge$plug "
 }
